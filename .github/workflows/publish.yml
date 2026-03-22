@@ -22,14 +22,8 @@ jobs:
         run: |
           pip install build twine
 
-      - name: Generate thrift code
-        run: make gen
-
-      - name: Build package
-        run: make build
-
       - name: Publish to PyPI
-        run: twine upload dist/*
+        run: make publish
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
