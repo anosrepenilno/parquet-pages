@@ -16,4 +16,4 @@ build: clean gen
 	python -m build
 
 publish: build
-	python -m twine upload dist/*
+	python -m twine upload --verbose dist/*
