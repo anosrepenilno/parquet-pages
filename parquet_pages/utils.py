@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 DEFAULT_REPR_CLASSES: List[str] = []
 INDENT_STEP: int = 2
