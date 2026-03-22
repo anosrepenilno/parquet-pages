@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "parquet-pages"
+version = "0.1.0"
+description = "parse parquet metadata including page headers"
+authors = [{name="Anosrep Enilno"}]
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = []
+
+[tool.setuptools]
+packages = { find = {} }
+
+[tool.setuptools.package-data]
+parquet_pages = ["*.thrift"]

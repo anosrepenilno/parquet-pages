@@ -1,0 +1,6 @@
+parquet_pages/parquet/*
+*.pyc
+__pycache__/
+dist/
+build/
+*.egg-info/
