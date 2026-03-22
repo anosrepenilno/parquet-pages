@@ -62,10 +62,14 @@ def _read_impl(file, file_len):
                 col_chunk.column_index_offset,
             )
 
-            assert col_chunk.meta_data == read_struct(
-                ttypes.ColumnMetaData,
-                col_chunk.file_offset,
-            )
+            if(
+                col_chunk.file_offset != 0 and
+                col_chunk.file_offset != col_chunk.meta_data.data_page_offset
+            ):
+                assert col_chunk.meta_data == read_struct(
+                    ttypes.ColumnMetaData,
+                    col_chunk.file_offset,
+                )
 
             col_chunk.page_headers = page_headers
             col_chunk.offset_index = offset_index

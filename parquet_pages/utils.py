@@ -1,0 +1,66 @@
+from typing import Any
+
+DEFAULT_REPR_CLASSES: List[str] = []
+INDENT_STEP: int = 2
+
+def pretty_repr(obj: Any, depth: int = 0):
+    if obj.__class__.__name__ in DEFAULT_REPR_CLASSES:
+        return repr(obj)
+    
+    space = " " * depth * INDENT_STEP
+    next_space = " " * (depth + 1) * INDENT_STEP
+
+    # Primitive types
+    if isinstance(obj, (int, float, str, bool, type(None))):
+        return repr(obj)
+
+    # List / Tuple
+    if isinstance(obj, (list, tuple)):
+        if not obj:
+            return "[]" if isinstance(obj, list) else "()"
+
+        open_bracket = "[" if isinstance(obj, list) else "("
+        close_bracket = "]" if isinstance(obj, list) else ")"
+
+        return (
+            f"{open_bracket}\n" + 
+            "".join([
+                f"{next_space}{pretty_repr(item, depth + 1)},\n"
+                for item in obj
+            ]) + 
+            f"{space}{close_bracket}"
+        )
+
+    # Dict
+    if isinstance(obj, dict):
+        if not obj:
+            return "{}"
+ 
+        return (
+            "{\n" + 
+            "".join([
+                f"{next_space}{repr(k)}: {pretty_repr(v, depth + 1)},\n"
+                for k, v in obj.items()
+            ]) + 
+            f"{space}}}"
+        )
+
+    # Object with __dict__
+    if hasattr(obj, "__dict__"):
+        cls_name = obj.__class__.__name__
+        attrs = vars(obj)
+
+        if not attrs:
+            return f"{cls_name}()"
+
+        return (
+            f"{cls_name}(\n" + 
+            "".join([
+                f"{next_space}{k}={pretty_repr(v, depth + 1)},\n"
+                for k, v in attrs.items()
+            ]) + 
+            f"{space})"
+        )
+
+    # Fallback
+    return repr(obj)
