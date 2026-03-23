@@ -20,7 +20,7 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install pandas polars pytest
+          pip install pandas polars pytest pyarrow
 
       - name: pytest
         run: make test
