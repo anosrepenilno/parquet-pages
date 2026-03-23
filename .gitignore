@@ -1,6 +1,7 @@
-parquet_pages/parquet/*
+src/parquet_pages/parquet/*
 *.pyc
 __pycache__/
 dist/
 build/
 *.egg-info/
+tests/tmp

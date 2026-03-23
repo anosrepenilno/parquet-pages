@@ -9,7 +9,7 @@ from .parquet import ttypes
 
 __all__ = ["read_parquet_metadata"]
 
-def _read_impl(file, file_len):
+def _read_impl(file, file_len) -> ttypes.FileMetaData:
     uint32_parser = struct.Struct("<I")
     assert file.read(4) == b"PAR1"
     
@@ -42,34 +42,45 @@ def _read_impl(file, file_len):
 
     for rg in metadata.row_groups:
         for col_chunk in rg.columns:
+            first_page_offset = min({
+                col_chunk.meta_data.data_page_offset,
+                col_chunk.meta_data.index_page_offset,
+                col_chunk.meta_data.dictionary_page_offset,
+            } - {None,})
             page_headers = []
 
-            file.seek(col_chunk.meta_data.data_page_offset, 0)
+            file.seek(first_page_offset, 0)
             end_pos = file.tell() + col_chunk.meta_data.total_compressed_size
             while file.tell() < end_pos:
                 page_header = read_struct(ttypes.PageHeader)
                 page_headers.append(page_header)
-                file.seek(page_header.compressed_page_size, 1)
+                file.seek(page_header.compressed_page_size, 1) # skim past actual data
             assert file.tell() == end_pos
             
-            offset_index = read_struct(
-                ttypes.OffsetIndex,
-                col_chunk.offset_index_offset,
-            )
+            if col_chunk.offset_index_offset is not None:
+                offset_index = read_struct(
+                    ttypes.OffsetIndex,
+                    col_chunk.offset_index_offset,
+                )
+            else:
+                offset_index = None
 
-            column_index = read_struct(
-                ttypes.ColumnIndex,
-                col_chunk.column_index_offset,
-            )
+            if col_chunk.column_index_offset is not None:
+                column_index = read_struct(
+                    ttypes.ColumnIndex,
+                    col_chunk.column_index_offset,
+                )
+            else:
+                column_index = None
 
             if(
                 col_chunk.file_offset != 0 and
-                col_chunk.file_offset != col_chunk.meta_data.data_page_offset
+                col_chunk.file_offset != first_page_offset
             ):
                 assert col_chunk.meta_data == read_struct(
                     ttypes.ColumnMetaData,
                     col_chunk.file_offset,
-                )
+                ), "The (deprecated) ColumnChunk.file_offset field points to a possibly incorrect ColumnMetaData"
 
             col_chunk.page_headers = page_headers
             col_chunk.offset_index = offset_index
@@ -77,17 +88,17 @@ def _read_impl(file, file_len):
 
     return metadata
                 
-def _read_from_file(filepath="example.parquet"):
+def _read_from_file(filepath="example.parquet") -> ttypes.FileMetaData:
     file_len = os.path.getsize(filepath)
 
     with open(filepath, 'rb') as file:
         return _read_impl(file, file_len)
 
-def _read_from_bytes(bytes_obj):
+def _read_from_bytes(bytes_obj) -> ttypes.FileMetaData:
     return _read_impl(io.BytesIO(bytes_obj), len(bytes_obj))
 
 
-def read_parquet_metadata(source: Union[str, bytes]):
+def read_parquet_metadata(source: Union[str, bytes]) -> ttypes.FileMetaData:
     if isinstance(source, str):
         return _read_from_file(filepath=source)
     elif isinstance(source, bytes):

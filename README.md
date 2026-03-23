@@ -54,9 +54,6 @@ parquet_pages.utils.DEFAULT_REPR_CLASSES = ['SchemaElement', 'Statistics']
 print(parquet_pages.utils.pretty_repr(metadata))
 ```
 
-## Shortcomings
-Most thrift structs include the enum-integer values (0,2,3,8, etc) instead of a more descriptive identifier for some fields (encoding-type, data-type, compression-codec etc). You'd have to refer the `parquet.thrift` definition for understanding a given output (for example `codec=6` means `zstd`)
-
 
 ## Requirements
 - Requires [`thrift`](https://pypi.org/project/thrift/) at runtime

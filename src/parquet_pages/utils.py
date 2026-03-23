@@ -57,7 +57,7 @@ def pretty_repr(obj: Any, depth: int = 0):
             f"{cls_name}(\n" + 
             "".join([
                 f"{next_space}{k}={pretty_repr(v, depth + 1)},\n"
-                for k, v in attrs.items()
+                for k, v in attrs.items() if v is not None
             ]) + 
             f"{space})"
         )
