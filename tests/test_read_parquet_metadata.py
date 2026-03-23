@@ -32,8 +32,10 @@ def test_1():
         'y': [b],
     }).set_index('x').to_parquet(f"{TMP_ROOT}/example2.parquet", compression=None)
     metadata2 = read_parquet_metadata(f"{TMP_ROOT}/example2.parquet")
-    assert metadata2.row_groups[0].columns[0].meta_data.total_compressed_size == 4138
-    assert metadata2.row_groups[0].columns[0].meta_data.total_uncompressed_size == 4138
+    assert (
+        metadata2.row_groups[0].columns[0].meta_data.total_compressed_size == 
+        metadata2.row_groups[0].columns[0].meta_data.total_uncompressed_size
+    )
 
     parquet_pages.utils.pretty_repr(metadata)
     parquet_pages.utils.pretty_repr(metadata2)

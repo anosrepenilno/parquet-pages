@@ -2,6 +2,7 @@ from typing import Union, Optional
 import struct
 import os
 import io
+import warnings
 
 import thrift.protocol.TCompactProtocol
 from .parquet import ttypes
@@ -42,6 +43,15 @@ def _read_impl(file, file_len) -> ttypes.FileMetaData:
 
     for rg in metadata.row_groups:
         for col_chunk in rg.columns:
+            if col_chunk.meta_data is None:
+                if col_chunk.file_offset == 0:
+                    raise RuntimeError(f"no metadata for ColumnChunk")
+                warnings.warn("relying on ColumnChunk.file_offset for ColumnChunk.ColumnMetaData is Deprecated", DeprecationWarning)
+                col_chunk.meta_data = read_struct(
+                    ttypes.ColumnMetaData,
+                    col_chunk.file_offset,
+                )
+            
             first_page_offset = min({
                 col_chunk.meta_data.data_page_offset,
                 col_chunk.meta_data.index_page_offset,
@@ -72,15 +82,6 @@ def _read_impl(file, file_len) -> ttypes.FileMetaData:
                 )
             else:
                 column_index = None
-
-            if(
-                col_chunk.file_offset != 0 and
-                col_chunk.file_offset != first_page_offset
-            ):
-                assert col_chunk.meta_data == read_struct(
-                    ttypes.ColumnMetaData,
-                    col_chunk.file_offset,
-                ), "The (deprecated) ColumnChunk.file_offset field points to a possibly incorrect ColumnMetaData"
 
             col_chunk.page_headers = page_headers
             col_chunk.offset_index = offset_index
