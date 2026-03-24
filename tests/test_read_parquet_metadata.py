@@ -1,11 +1,13 @@
 import io
 import os
 
-from parquet_pages import read_parquet_metadata, ttypes
-import parquet_pages.utils
+from parquet_pages import read_parquet_metadata, ttypes, LazyLoaded
+from parquet_pages.utils import pretty_repr
+from parquet_pages.tui import TreeApp
 
 import polars as pl
 import pandas as pd
+from textual.widgets import Tree
 
 TMP_ROOT = "tests/tmp"
 os.makedirs(TMP_ROOT, exist_ok=True)
@@ -37,9 +39,34 @@ def test_1():
         metadata2.row_groups[0].columns[0].meta_data.total_uncompressed_size
     )
 
-    parquet_pages.utils.pretty_repr(metadata)
-    parquet_pages.utils.pretty_repr(metadata2)
-    parquet_pages.utils.DEFAULT_REPR_CLASSES = ["Statistics", "SchemaElement"]
-    parquet_pages.utils.pretty_repr(metadata)
-    print(parquet_pages.utils.pretty_repr(metadata2))
+    assert "None" not in pretty_repr(metadata, show_None=False)
+    assert "None" not in pretty_repr(metadata2, show_None=False)
+    repr_ = pretty_repr(metadata, show_None=True)
+    assert "None" in repr_
+    assert repr_.count("None") == 148
+    repr_ = pretty_repr(metadata2, show_None=True)
+    assert "None" in repr_
+    assert repr_.count("None") == 78
+    print(repr_)
+
+    tree = next(TreeApp(metadata).compose())
+    assert isinstance(tree, Tree)
+    assert len(tree._tree_nodes) == 218
+    tree = next(TreeApp(metadata, show_None=True).compose())
+    assert isinstance(tree, Tree)
+    assert len(tree._tree_nodes) == 366
+
+    metadata_lazy = read_parquet_metadata(f"{TMP_ROOT}/example.parquet", lazy_load_pg_hdrs=True)
+    for rg_lazy, rg in zip(metadata_lazy.row_groups, metadata.row_groups):
+        for col_lazy, col in zip(rg_lazy.columns, rg.columns):
+            assert isinstance(col_lazy.page_headers, LazyLoaded)
+            col_lazy.page_headers.load() == col.page_headers
+
+    tree = next(TreeApp(metadata_lazy).compose())
+    assert isinstance(tree, Tree)
+    assert len(tree._tree_nodes) == 172
+    tree = next(TreeApp(metadata_lazy, show_None=True).compose())
+    assert isinstance(tree, Tree)
+    assert len(tree._tree_nodes) == 288
+
 

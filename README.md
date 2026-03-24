@@ -16,39 +16,50 @@ from parquet_pages import ttypes
 ttypes.FileMetaData # etc
 ```
 
-Everything except the `PageHeader` structs are in the file's footer. So if you don't need the `PageHeader`s, there are other simpler tools to get the rest.
+Everything except the `PageHeader` structs are in the file's footer. So if you don't need the `PageHeader`s, there might be other simpler tools to get the rest.
 Since this tool reads the `PageHeader`s too (which are scattered all over the file) it might end up doing significant I/O if the parquet file is large enough.
 So it is really only intended for development-time inspection/debugging.
 
+However, there is also the ability to lazy-load the PageHeader structs. See below for details
+
 ## Usage Examples
-```python
-from parquet_pages import read_parquet_metadata
+- core functionality:
 
-metadata = read_parquet_metadata("example.parquet")
+  ```python
+  from parquet_pages import read_parquet_metadata
 
-with open("example2.parquet", "rb") as file:
-    file_contents = file.read()
+  metadata = read_parquet_metadata("example.parquet")
 
-metadata2 = read_parquet_metadata(file_contents)
-```
-or invoke as as a module which displays it in an interactive TUI with collapsible sections.
+  with open("example2.parquet", "rb") as file:
+      file_contents = file.read()
 
-optionally, can also instead dump repr(metadata) to stdout without any TUI, with readable indentation (`--raw`)
-```
-% python -m parquet_pages --help                              
-usage: python -m parquet_pages [-h] -f FILEPATH [--expand] [--raw]
+  metadata2 = read_parquet_metadata(file_contents)
+  ```
 
-reads given parquet's FileMetaData and displays it in an interactive TUI with collapsible sections
+- or invoke as as a module which displays it in an interactive TUI with collapsible sections.
+  - optionally, can also instead dump repr(metadata) to stdout without any TUI, with readable indentation (`--raw`)
 
-options:
-  -h, --help            show this help message and exit
-  -f, --filepath FILEPATH
-                        Path to the parquet file
-  --expand              [TUI only] expand all collapsible sections at start
-  --raw                 disable TUI and dump formatted repr directly to stdout
-```
+  - by default, when invoking as a module we lazy-load the `PageHeader`s (only read them from the file when requested).
+    - this can be changed with the `--eager` flag
+    - to replicate this behaviour in `read_parquet_metadata`, we can pass the argument `lazy_load_pg_hdrs=True`
 
-![TUI Example](https://raw.githubusercontent.com/anosrepenilno/parquet-pages/main/images/tui_example.png)
+  ```
+  % python -m parquet_pages -h                                    
+  usage: python -m parquet_pages [-h] -f FILEPATH [--expand] [--eager] [--show-None] [--raw]
+
+  reads given parquet's FileMetaData and displays it in an interactive TUI with collapsible sections
+
+  options:
+    -h, --help            show this help message and exit
+    -f, --filepath FILEPATH
+                          Path to the parquet file
+    --expand              [TUI only] expand all collapsible sections at start
+    --eager               eagerly load all page headers at start. default is to lazy load on click (or to not load at all incase of --raw)
+    --show-None           show `None` attributes as well
+    --raw                 disable TUI and dump formatted repr directly to stdout
+  ```
+
+  ![TUI Example](https://raw.githubusercontent.com/anosrepenilno/parquet-pages/main/images/tui_example.png)
 
 ## Requirements
 ### Runtime

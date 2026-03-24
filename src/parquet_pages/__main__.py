@@ -24,6 +24,18 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--eager",
+        action="store_true",
+        help="eagerly load all page headers at start. default is to lazy load on click (or to not load at all incase of --raw)"
+    )
+
+    parser.add_argument(
+        "--show-None",
+        action="store_true",
+        help="show `None` attributes as well"
+    )
+
+    parser.add_argument(
         "--raw",
         action="store_true",
         help="disable TUI and dump formatted repr directly to stdout"
@@ -31,18 +43,20 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    metadata = read_parquet_metadata(args.filepath)
+    metadata = read_parquet_metadata(args.filepath, lazy_load_pg_hdrs=(not args.eager))
+
+    repr_ = pretty_repr(metadata, show_None=args.show_None)
 
     if args.raw:
-        print(pretty_repr(metadata))
+        print(repr_)
     else:
         try:
             from .tui import TreeApp
-            app = TreeApp(obj=metadata, expand=args.expand)
+            app = TreeApp(obj=metadata, expand=args.expand, show_None=args.show_None)
             app.run()
         except Exception:
             print("".join(["-"]*(shutil.get_terminal_size().columns)))
-            print(pretty_repr(metadata))
+            print(repr_)
             print("".join(["-"]*(shutil.get_terminal_size().columns)))
             print_exc()
 

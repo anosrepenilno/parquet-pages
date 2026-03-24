@@ -1,15 +1,17 @@
 from typing import Any, List
 
+from . import LazyLoaded
+
 INDENT: str = "   │"
 LAST_INDENT: str = "   ├"
 
-def pretty_repr(obj: Any, depth: int = 0):
+def pretty_repr(obj: Any, depth: int = 0, show_None: bool = False):
     
     space = INDENT * depth
     next_space = space + LAST_INDENT
 
     # Primitive types
-    if isinstance(obj, (int, float, str, bool, type(None))):
+    if isinstance(obj, (int, float, str, bool, type(None), LazyLoaded)):
         return repr(obj)
 
     # List / Tuple
@@ -23,7 +25,7 @@ def pretty_repr(obj: Any, depth: int = 0):
         return (
             f"{open_bracket}\n" + 
             "".join([
-                f"{next_space}{pretty_repr(item, depth + 1)},\n"
+                f"{next_space}{pretty_repr(item, depth + 1, show_None)},\n"
                 for item in obj
             ]) + 
             f"{space}{close_bracket}"
@@ -37,7 +39,7 @@ def pretty_repr(obj: Any, depth: int = 0):
         return (
             "{\n" + 
             "".join([
-                f"{next_space}{repr(k)}: {pretty_repr(v, depth + 1)},\n"
+                f"{next_space}{repr(k)}: {pretty_repr(v, depth + 1, show_None)},\n"
                 for k, v in obj.items()
             ]) + 
             f"{space}}}"
@@ -54,8 +56,9 @@ def pretty_repr(obj: Any, depth: int = 0):
         return (
             f"{cls_name}(\n" + 
             "".join([
-                f"{next_space}{k}={pretty_repr(v, depth + 1)},\n"
-                for k, v in attrs.items() if v is not None
+                f"{next_space}{k}={pretty_repr(v, depth + 1, show_None)},\n"
+                for k, v in attrs.items() 
+                if show_None or (v is not None)
             ]) + 
             f"{space})"
         )

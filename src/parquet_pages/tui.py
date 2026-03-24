@@ -1,9 +1,31 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Tree, Static
+from textual.widgets import Tree
+from typing import Any, Optional, TYPE_CHECKING
+
+from . import LazyLoaded
+
+if TYPE_CHECKING:
+    from textual.widget._tree import TreeNode
 
 __all__ = ["TreeApp"]
 
-def _add_obj(obj, parent_tree_node, prefix=""):
+SHOW_NONE = False
+
+def _add_obj(
+    obj: Any, 
+    parent_tree_node: "TreeNode", 
+    prefix: str = "", 
+    add_just_before: "Optional[TreeNode]" = None
+):
+    if isinstance(obj, LazyLoaded):
+        eager_type = obj.callback.__annotations__.get("return", Any)
+        obj_tree_node = parent_tree_node.add_leaf(
+            f"{prefix}`{eager_type.__name__}` (click to load)", 
+            data={'obj': obj, 'lazy': True, 'prefix': prefix},
+            before=add_just_before,
+        )
+        return
+
     if isinstance(obj, (int, float, str, bool, type(None))):
         is_leaf = True
     elif isinstance(obj, (list, tuple, dict)):
@@ -14,7 +36,8 @@ def _add_obj(obj, parent_tree_node, prefix=""):
     if is_leaf:
         parent_tree_node.add_leaf(
             f"{prefix}`{obj.__class__.__name__}` {repr(obj)}", 
-            data=obj
+            data={'obj': obj},
+            before=add_just_before,
         )
         return
 
@@ -32,15 +55,21 @@ def _add_obj(obj, parent_tree_node, prefix=""):
         iterator = (
             (f"{key}= ", val)
             for key, val in obj.__dict__.items()
-            if val is not None
+            if SHOW_NONE or (val is not None)
         )
 
     obj_tree_node = parent_tree_node.add(
         f"{prefix}`{obj.__class__.__name__}`", 
-        data=obj
+        data={'obj': obj},
+        before=add_just_before,
     )
     for child_prefix, child_obj in iterator:
-        _add_obj(child_obj, obj_tree_node, child_prefix)
+        _add_obj(
+            obj=child_obj, 
+            parent_tree_node=obj_tree_node, 
+            prefix=child_prefix, 
+            add_just_before=None,
+        )
 
 class TreeApp(App):
     BINDINGS = [
@@ -51,17 +80,46 @@ class TreeApp(App):
         self, 
         obj: Any, 
         expand: bool = False, 
+        show_None: bool = False,
         *args, 
         **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.obj = obj
         self.expand = expand
+        global SHOW_NONE
+        SHOW_NONE = show_None
 
     def compose(self) -> ComposeResult:
         tree: Tree[str] = Tree("Press q to quit")
-        _add_obj(self.obj, tree.root)
+        _add_obj(
+            obj=self.obj,
+            parent_tree_node=tree.root,
+            prefix="",
+            add_just_before=None,
+        )
         tree.root.expand()
         if self.expand:
             tree.root.expand_all()
         yield tree
+    
+    def on_tree_node_selected(self, event: Tree.NodeExpanded) -> None:
+        node = event.node
+
+        if node.data.get("selected_once", False):
+            return
+        node.data["selected_once"] = True
+
+        if not node.data.get("lazy", False):
+            return
+
+        lazy_obj = node.data["obj"]
+        eager_obj = lazy_obj.load()
+        _add_obj(
+            obj=eager_obj, 
+            parent_tree_node=node.parent, 
+            prefix=node.data["prefix"], 
+            add_just_before=node
+        )
+        node.remove()
+            

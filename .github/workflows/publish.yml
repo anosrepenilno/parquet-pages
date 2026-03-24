@@ -20,7 +20,7 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install pandas polars pytest pyarrow
+          pip install pandas==3.0.1 polars==1.39.3 pytest==9.0.2 pyarrow==22.0.0
 
       - name: pytest
         run: make test
