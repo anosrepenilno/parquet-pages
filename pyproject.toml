@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "parquet-pages"
-version = "0.3.0"
+version = "0.4.0"
 description = "parse parquet metadata including page headers"
 authors = [{name="Anosrep Enilno"}]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "thrift>=0.22",
+    "textual>=8.1.1",
 ]
 
 [project.urls]

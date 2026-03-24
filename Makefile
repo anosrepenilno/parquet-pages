@@ -20,4 +20,4 @@ publish: build
 
 test: gen
 	pip install -e .
-	pytest tests/
+	pytest -s tests/

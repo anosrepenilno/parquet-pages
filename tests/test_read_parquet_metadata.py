@@ -41,5 +41,5 @@ def test_1():
     parquet_pages.utils.pretty_repr(metadata2)
     parquet_pages.utils.DEFAULT_REPR_CLASSES = ["Statistics", "SchemaElement"]
     parquet_pages.utils.pretty_repr(metadata)
-    parquet_pages.utils.pretty_repr(metadata2)
+    print(parquet_pages.utils.pretty_repr(metadata2))
 

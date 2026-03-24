@@ -1,14 +1,12 @@
 from typing import Any, List
 
-DEFAULT_REPR_CLASSES: List[str] = []
-INDENT_STEP: int = 2
+INDENT: str = "   │"
+LAST_INDENT: str = "   ├"
 
 def pretty_repr(obj: Any, depth: int = 0):
-    if obj.__class__.__name__ in DEFAULT_REPR_CLASSES:
-        return repr(obj)
     
-    space = " " * depth * INDENT_STEP
-    next_space = " " * (depth + 1) * INDENT_STEP
+    space = INDENT * depth
+    next_space = space + LAST_INDENT
 
     # Primitive types
     if isinstance(obj, (int, float, str, bool, type(None))):

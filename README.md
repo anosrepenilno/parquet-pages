@@ -31,35 +31,37 @@ with open("example2.parquet", "rb") as file:
 
 metadata2 = read_parquet_metadata(file_contents)
 ```
-or invoke as as a module which dumps repr(metadata) to stdout, with readable indentation
-```
- % python -m parquet_pages -h                       
-usage: python -m parquet_pages [-h] -f FILEPATH [--default_repr_classes DEFAULT_REPR_CLASSES [DEFAULT_REPR_CLASSES ...]]
+or invoke as as a module which displays it in an interactive TUI with collapsible sections.
 
-dump parquet's FileMetaData pretty-printed to stdout
+optionally, can also instead dump repr(metadata) to stdout without any TUI, with readable indentation (`--raw`)
+```
+% python -m parquet_pages --help                              
+usage: python -m parquet_pages [-h] -f FILEPATH [--expand] [--raw]
+
+reads given parquet's FileMetaData and displays it in an interactive TUI with collapsible sections
 
 options:
   -h, --help            show this help message and exit
   -f, --filepath FILEPATH
-                        Path to the file
-  --default_repr_classes DEFAULT_REPR_CLASSES [DEFAULT_REPR_CLASSES ...]
-                        List of class names for which to force reverting to their default __repr__ implementations (default: empty list)
+                        Path to the parquet file
+  --expand              [TUI only] expand all collapsible sections at start
+  --raw                 disable TUI and dump formatted repr directly to stdout
 ```
 
-To use the above pretty-print inside a script you can:
-```python
-import parquet_pages.utils
-print(parquet_pages.utils.pretty_repr(metadata))
-parquet_pages.utils.DEFAULT_REPR_CLASSES = ['SchemaElement', 'Statistics']
-print(parquet_pages.utils.pretty_repr(metadata))
-```
-
+![TUI Example](https://raw.githubusercontent.com/anosrepenilno/parquet-pages/main/images/tui_example.png)
 
 ## Requirements
-- Requires [`thrift`](https://pypi.org/project/thrift/) at runtime
-- Requires `thrift-compiler` at build time
-  - does **NOT** require this if installing from pypi
-  - see `Dockerfile`, `Makefile` for build (`make publish`)
+### Runtime
+- Requires [`thrift`](https://pypi.org/project/thrift/)
+- Only optionally requires, but recommended: [`textual`](https://pypi.org/project/textual/)
+  - not optional during install, so would be installed automatically, but someone might uninstall it and core functionality will still work
+    - `parquet_pages.read_parquet_metadata` does not require it
+    - `python -m parquet_pages --raw ...` does not require it
+  - only to manage TUI display after metadata is read
+### Build-time
+- Requires `thrift-compiler`
+  - but does **NOT** require this if installing from pypi
+  - see `Dockerfile`, `Makefile` (`make publish`)
 
 
 ## License
