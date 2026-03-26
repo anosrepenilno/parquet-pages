@@ -1,5 +1,4 @@
 import argparse
-from traceback import print_exc
 import shutil
 
 from . import read_parquet_metadata
@@ -57,7 +56,7 @@ if __name__ == "__main__":
         except Exception:
             print("".join(["-"]*(shutil.get_terminal_size().columns)))
             print(repr_)
-            print("".join(["-"]*(shutil.get_terminal_size().columns)))
-            print_exc()
+            print("".join(["-"]*(shutil.get_terminal_size().columns)), flush=True)
+            raise
 
     

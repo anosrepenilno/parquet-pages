@@ -1,65 +1,71 @@
 # Parquet-Pages
-read a parquet files' metadata information, including each individual data-page headers.
-Exposes them directly as thrift structs deserialised in accordance with parquet.thrift (included from [apache/parquet-format](https://github.com/apache/parquet-format/blob/master/src/main/thrift/parquet.thrift))
+reads a parquet files' metadata information, including each individual data-page headers.
+Exposes them directly as thrift structs deserialised in accordance with apache's [parquet.thrift](https://github.com/apache/parquet-format/blob/master/src/main/thrift/parquet.thrift). That file has extensive comments describing the precise meaning of each field (and the lack thereof, if it is deprecated)
 These structs include:
 - `FileMetaData`
   - `RowGroup` (s)
     - `ColumnChunk` (s)
       - `ColumnMetaData`
-      - `OffsetIndex`
-      - `ColumnIndex`
+      - `OffsetIndex` (if present)
+      - `ColumnIndex` (if present)
       - `PageHeader` (s)
 
-can refer to these directly as:
+(.. etc)
+
+The intended way is to invoke this package as a module to get an interactive TUI that displays this information with collapsible sections. But, one may also instead read it into a `FileMetaData` object inside a script (see details below), in which case the above thrift-generated classes are also exposed via:
 ```python
 from parquet_pages import ttypes
-ttypes.FileMetaData # etc
+ttypes.FileMetaData
+ttypes.ColumnMetaData # etc
 ```
-
-Everything except the `PageHeader` structs are in the file's footer. So if you don't need the `PageHeader`s, there might be other simpler tools to get the rest.
-Since this tool reads the `PageHeader`s too (which are scattered all over the file) it might end up doing significant I/O if the parquet file is large enough.
-So it is really only intended for development-time inspection/debugging.
-
-However, there is also the ability to lazy-load the PageHeader structs. See below for details
+### NOTE
+From a thrift spec perspective, `OffsetIndex` and `ColumnIndex` (when present) are not actually a part of `ColumnChunk`, but are located separately before the rest of the metadata footer. `PageHeader` is not in the footer at all (more details below). But they are presented in the above hierarchy for ease.
 
 ## Usage Examples
-- core functionality:
 
-  ```python
-  from parquet_pages import read_parquet_metadata
+```
+% python -m parquet_pages -h                                    
+usage: python -m parquet_pages [-h] -f FILEPATH [--expand] [--eager] [--show-None] [--raw]
 
-  metadata = read_parquet_metadata("example.parquet")
+reads given parquet's FileMetaData and displays it in an interactive TUI with collapsible sections
 
-  with open("example2.parquet", "rb") as file:
-      file_contents = file.read()
+options:
+  -h, --help            show this help message and exit
+  -f, --filepath FILEPATH
+                        Path to the parquet file
+  --expand              [TUI only] expand all collapsible sections at start
+  --eager               eagerly load all page headers at start. default is to lazy load on click (or to not load at all incase of --raw)
+  --show-None           show `None` attributes as well
+  --raw                 disable TUI and dump formatted repr directly to stdout
+```
 
-  metadata2 = read_parquet_metadata(file_contents)
-  ```
+- optionally, can also instead dump repr(metadata) to stdout without any TUI, with readable indentation (`--raw`)
+- by default, we lazy-load the `PageHeader`s (only read them from the file when requested).
+  - this can be changed with the `--eager` flag
+  - This is lazy-loaded because all the other thrift-serialised-structs (except `PageHeader`s) are together in the file's footer, but the page-headers (which are before every page's payload) would be scattered all over the file. Eagerly loading them all might end up doing significant I/O if the parquet file is large enough.
+    - but since we are only reading the headers and not the payload as well, it wouldn't be more work than reading the entire file contents, for perspective. In most cases eager loading shouldn't feel any slower at all.
 
-- or invoke as as a module which displays it in an interactive TUI with collapsible sections.
-  - optionally, can also instead dump repr(metadata) to stdout without any TUI, with readable indentation (`--raw`)
+![TUI Example](https://raw.githubusercontent.com/anosrepenilno/parquet-pages/main/images/tui_example.png)
 
-  - by default, when invoking as a module we lazy-load the `PageHeader`s (only read them from the file when requested).
-    - this can be changed with the `--eager` flag
-    - to replicate this behaviour in `read_parquet_metadata`, we can pass the argument `lazy_load_pg_hdrs=True`
 
-  ```
-  % python -m parquet_pages -h                                    
-  usage: python -m parquet_pages [-h] -f FILEPATH [--expand] [--eager] [--show-None] [--raw]
+To read in a script:
 
-  reads given parquet's FileMetaData and displays it in an interactive TUI with collapsible sections
+```python
+from parquet_pages import read_parquet_metadata
 
-  options:
-    -h, --help            show this help message and exit
-    -f, --filepath FILEPATH
-                          Path to the parquet file
-    --expand              [TUI only] expand all collapsible sections at start
-    --eager               eagerly load all page headers at start. default is to lazy load on click (or to not load at all incase of --raw)
-    --show-None           show `None` attributes as well
-    --raw                 disable TUI and dump formatted repr directly to stdout
-  ```
+metadata = read_parquet_metadata("example.parquet")
 
-  ![TUI Example](https://raw.githubusercontent.com/anosrepenilno/parquet-pages/main/images/tui_example.png)
+with open("example2.parquet", "rb") as file:
+    file_contents = file.read()
+
+metadata2 = read_parquet_metadata(file_contents)
+```
+
+- This eagerly-loads `PageHeader`s by default, for simplicity.
+- To load them lazily like what happens in the TUI, we can pass the argument `lazy_load_pg_hdrs=True`
+  - the argument is ignored when reading from a `bytes` object, as it only would have made a difference when reading from a file on disk.
+  - it replaces `PageHeader` objects with `parquet_bytes.LazyLoaded` objects, calling whose `.load()` method will actually read and return the struct.
+
 
 ## Requirements
 ### Runtime

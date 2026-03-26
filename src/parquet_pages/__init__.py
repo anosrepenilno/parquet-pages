@@ -10,7 +10,7 @@ from .parquet import ttypes
 
 T = TypeVar("T")
 
-__all__ = ["read_parquet_metadata", "LazyLoaded"]
+__all__ = ["read_parquet_metadata", "LazyLoaded", "ttypes"]
 
 def read_struct(cls, file, offset: Optional[int] = None):
     obj = cls()

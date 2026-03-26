@@ -2,7 +2,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Tree
 from typing import Any, Optional, TYPE_CHECKING
 
-from . import LazyLoaded
+from . import LazyLoaded, ttypes
 
 if TYPE_CHECKING:
     from textual.widget._tree import TreeNode
@@ -10,6 +10,13 @@ if TYPE_CHECKING:
 __all__ = ["TreeApp"]
 
 SHOW_NONE = False
+
+def _suffix(obj) -> str:
+    if isinstance(obj, ttypes.ColumnChunk):
+        return repr(obj.meta_data.path_in_schema)
+    elif isinstance(obj, ttypes.RowGroup):
+        return f"[{obj.num_rows} rows]"
+    return ""
 
 def _add_obj(
     obj: Any, 
@@ -43,8 +50,8 @@ def _add_obj(
 
     if isinstance(obj, (list, tuple)): 
         iterator = (
-            ("", val)
-            for val in obj
+            (f"\[#{idx}] ", val)
+            for idx, val in enumerate(obj)
         )
     elif isinstance(obj, dict):
         iterator = (
@@ -59,7 +66,7 @@ def _add_obj(
         )
 
     obj_tree_node = parent_tree_node.add(
-        f"{prefix}`{obj.__class__.__name__}`", 
+        f"{prefix}`{obj.__class__.__name__}` {_suffix(obj)}", 
         data={'obj': obj},
         before=add_just_before,
     )
@@ -105,6 +112,9 @@ class TreeApp(App):
     
     def on_tree_node_selected(self, event: Tree.NodeExpanded) -> None:
         node = event.node
+
+        if node.data is None:
+            return
 
         if node.data.get("selected_once", False):
             return
