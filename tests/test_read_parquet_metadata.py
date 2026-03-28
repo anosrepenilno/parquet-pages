@@ -49,10 +49,10 @@ def test_1():
     assert repr_.count("None") == 78
     print(repr_)
 
-    tree = next(TreeApp({"example.parquet": metadata}).compose())
+    tree = list(TreeApp({"example.parquet": metadata}).compose())[1]
     assert isinstance(tree, Tree)
     assert len(tree._tree_nodes) == 218
-    tree = next(TreeApp({"example.parquet": metadata}, show_None=True).compose())
+    tree = list(TreeApp({"example.parquet": metadata}, show_None=True).compose())[1]
     assert isinstance(tree, Tree)
     assert len(tree._tree_nodes) == 366
 
@@ -62,10 +62,10 @@ def test_1():
             assert isinstance(col_lazy.page_headers, LazyLoaded)
             col_lazy.page_headers.load() == col.page_headers
 
-    tree = next(TreeApp({"example.parquet": metadata_lazy}).compose())
+    tree = list(TreeApp({"example.parquet": metadata_lazy}).compose())[1]
     assert isinstance(tree, Tree)
     assert len(tree._tree_nodes) == 172
-    tree = next(TreeApp({"example.parquet": metadata_lazy}, show_None=True).compose())
+    tree = list(TreeApp({"example.parquet": metadata_lazy}, show_None=True).compose())[1]
     assert isinstance(tree, Tree)
     assert len(tree._tree_nodes) == 288
 
