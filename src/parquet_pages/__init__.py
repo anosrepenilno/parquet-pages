@@ -143,4 +143,4 @@ def read_parquet_metadata(source: Union[str, bytes], lazy_load_pg_hdrs: bool = F
     elif isinstance(source, bytes):
         return _read_from_bytes(bytes_obj=source)
     else:
-        NotImplementedError(type(source))
+        raise NotImplementedError(type(source))

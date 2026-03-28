@@ -1,5 +1,8 @@
 import argparse
 import shutil
+import os
+from pathlib import Path
+import re
 
 from . import read_parquet_metadata
 from .utils import pretty_repr
@@ -11,9 +14,10 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-f",
-        "--filepath",
+        "--filepaths",
+        nargs="+",
         required=True,
-        help="Path to the parquet file"
+        help="Path(s)/glob-pattern(s) to parquet file(s)"
     )
 
     parser.add_argument(
@@ -42,21 +46,52 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    metadata = read_parquet_metadata(args.filepath, lazy_load_pg_hdrs=(not args.eager))
+    paths = []
+    for glob_pattern in args.filepaths:
+        if not re.search(r'[*?\[\]]', glob_pattern):
+            paths.append(Path(glob_pattern))
+            continue
+        for path in sorted(Path().glob(glob_pattern)):
+            paths.append(path)
 
-    repr_ = pretty_repr(metadata, show_None=args.show_None)
+    metadatas = {}
+    total_repr = []
+
+    seen_paths = set()
+
+    for path in paths:
+        if path.resolve() in seen_paths:
+            continue
+        seen_paths.add(path.resolve())
+        
+        filepath = str(path)
+
+        try:
+            metadata = read_parquet_metadata(filepath, lazy_load_pg_hdrs=(not args.eager))
+        except Exception as err:
+            raise RuntimeError(f"Error while reading metadata of {filepath=}") from err
+        
+        try:
+            repr_ = pretty_repr(metadata, show_None=args.show_None) # reprs[filepath]
+        except Exception as err:
+            raise RuntimeError(f"Parsing error after reading metadata of {filepath=}") from err
+
+        metadatas[filepath] = metadata
+
+        header = f" {filepath} ".center(shutil.get_terminal_size().columns, "-")
+        total_repr.append(f"{header}\n{repr_}")
+    
+    total_repr = "\n\n".join(total_repr)
 
     if args.raw:
-        print(repr_)
+        print(total_repr)
     else:
         try:
             from .tui import TreeApp
-            app = TreeApp(obj=metadata, expand=args.expand, show_None=args.show_None)
+            app = TreeApp(objs=metadatas, expand=args.expand, show_None=args.show_None)
             app.run()
         except Exception:
-            print("".join(["-"]*(shutil.get_terminal_size().columns)))
-            print(repr_)
-            print("".join(["-"]*(shutil.get_terminal_size().columns)), flush=True)
+            print(total_repr, flush=True)
             raise
 
     

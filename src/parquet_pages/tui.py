@@ -1,5 +1,5 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Tree
+from textual.widgets import Tree, Footer, Header
 from typing import Any, Optional, TYPE_CHECKING
 
 from . import LazyLoaded, ttypes
@@ -50,7 +50,7 @@ def _add_obj(
 
     if isinstance(obj, (list, tuple)): 
         iterator = (
-            (f"\[#{idx}] ", val)
+            (f"\\[#{idx}] ", val)
             for idx, val in enumerate(obj)
         )
     elif isinstance(obj, dict):
@@ -85,30 +85,34 @@ class TreeApp(App):
 
     def __init__(
         self, 
-        obj: Any, 
+        objs: Dict[str, Any], 
         expand: bool = False, 
         show_None: bool = False,
         *args, 
         **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.obj = obj
+        self.title = "Press q to quit"
+        self.objs = objs
         self.expand = expand
         global SHOW_NONE
         SHOW_NONE = show_None
 
     def compose(self) -> ComposeResult:
-        tree: Tree[str] = Tree("Press q to quit")
-        _add_obj(
-            obj=self.obj,
-            parent_tree_node=tree.root,
-            prefix="",
-            add_just_before=None,
-        )
+        yield Header()
+        tree: Tree[str] = Tree("parquet-metadata(s) :")
+        for title, obj in self.objs.items():
+            _add_obj(
+                obj=obj,
+                parent_tree_node=tree.root,
+                prefix=title + " ",
+                add_just_before=None,
+            )
         tree.root.expand()
         if self.expand:
             tree.root.expand_all()
         yield tree
+        yield Footer()
     
     def on_tree_node_selected(self, event: Tree.NodeExpanded) -> None:
         node = event.node
