@@ -1,6 +1,6 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Tree, Footer, Header
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING, Dict
 
 from . import LazyLoaded, ttypes
 
