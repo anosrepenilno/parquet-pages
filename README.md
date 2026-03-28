@@ -78,6 +78,7 @@ metadata2 = read_parquet_metadata(file_contents)
 ## Requirements
 ### Runtime
 - Requires [`thrift`](https://pypi.org/project/thrift/)
+- Requires [`jinja2`](https://pypi.org/project/jinja2/)
 - Only optionally requires, but recommended: [`textual`](https://pypi.org/project/textual/)
   - not optional during install, so would be installed automatically, but someone might uninstall it and core functionality will still work
     - `parquet_pages.read_parquet_metadata` does not require it
