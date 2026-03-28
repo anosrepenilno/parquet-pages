@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "parquet-pages"
-version = "0.5.1"
+version = "0.6.0"
 description = "parse parquet metadata including page headers"
 authors = [{name="Anosrep Enilno"}]
 readme = "README.md"
@@ -12,6 +12,7 @@ requires-python = ">=3.11"
 dependencies = [
     "thrift>=0.22",
     "textual>=8.1.1",
+    "jinja2>=3.1.6",
 ]
 
 [project.urls]

@@ -86,6 +86,7 @@ class TreeApp(App):
     def __init__(
         self, 
         objs: Dict[str, Any], 
+        root_label: str,
         expand: bool = False, 
         show_None: bool = False,
         *args, 
@@ -94,13 +95,14 @@ class TreeApp(App):
         super().__init__(*args, **kwargs)
         self.title = "Press q to quit"
         self.objs = objs
+        self.root_label = root_label
         self.expand = expand
         global SHOW_NONE
         SHOW_NONE = show_None
 
     def compose(self) -> ComposeResult:
         yield Header()
-        tree: Tree[str] = Tree("parquet-metadata(s) :")
+        tree: Tree[str] = Tree(self.root_label)
         for title, obj in self.objs.items():
             _add_obj(
                 obj=obj,

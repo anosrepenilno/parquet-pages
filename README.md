@@ -25,18 +25,19 @@ From a thrift spec perspective, `OffsetIndex` and `ColumnIndex` (when present) a
 
 ```
 % python -m parquet_pages -h                                    
-usage: python -m parquet_pages [-h] -f FILEPATH [--expand] [--eager] [--show-None] [--raw]
+usage: python -m parquet_pages [-h] -f FILEPATHS [FILEPATHS ...] [--expand] [--eager] [--show-None] [--raw] [--template TEMPLATE]
 
 reads given parquet's FileMetaData and displays it in an interactive TUI with collapsible sections
 
 options:
   -h, --help            show this help message and exit
-  -f, --filepath FILEPATH
-                        Path to the parquet file
+  -f, --filepaths FILEPATHS [FILEPATHS ...]
+                        Path(s)/glob-pattern(s) to parquet file(s)
   --expand              [TUI only] expand all collapsible sections at start
   --eager               eagerly load all page headers at start. default is to lazy load on click (or to not load at all incase of --raw)
   --show-None           show `None` attributes as well
   --raw                 disable TUI and dump formatted repr directly to stdout
+  --template TEMPLATE   jinja2 template to filter metadata info
 ```
 
 - optionally, can also instead dump repr(metadata) to stdout without any TUI, with readable indentation (`--raw`)
@@ -47,6 +48,13 @@ options:
 
 ![TUI Example](https://raw.githubusercontent.com/anosrepenilno/parquet-pages/main/images/tui_example.png)
 
+- example jinja2 templates:
+  - `--template "metadata.row_groups | map(attribute='total_compressed_size') | list"`
+    - size of each row-group in the file
+  - `--template "metadata.row_groups | map(attribute='columns') | sum(start=[]) | map(attribute='page_headers')  | sum(start=[]) | map(attribute='compressed_page_size') | list"`
+    - size of each data/dict/index pages in the file
+  - `--template "metadata.row_groups | map(attribute='columns') | map('map', attribute='page_headers') | map('map', 'map', attribute='compressed_page_size') | map('map', 'list') | map('list') | list"`
+    - same as last but without flattening hierarchy of row-groups, columns
 
 To read in a script:
 

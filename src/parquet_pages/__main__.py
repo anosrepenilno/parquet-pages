@@ -3,10 +3,12 @@ import shutil
 import os
 from pathlib import Path
 import re
+import warnings
 
 from . import read_parquet_metadata
 from .utils import pretty_repr
 
+from jinja2 import Environment
 
 
 if __name__ == "__main__":
@@ -44,7 +46,18 @@ if __name__ == "__main__":
         help="disable TUI and dump formatted repr directly to stdout"
     )
 
+    parser.add_argument(
+        "--template",
+        default=None,
+        help="jinja2 template to filter metadata info"
+    )
+
     args = parser.parse_args()
+
+    if args.template is None:
+        args.template = "metadata"
+    if "page_headers" in args.template and (not args.eager):
+        warnings.warn("if filtering `PageHeader`s in template string, might wanna add --eager flag", UserWarning)
 
     paths = []
     for glob_pattern in args.filepaths:
@@ -71,6 +84,8 @@ if __name__ == "__main__":
         except Exception as err:
             raise RuntimeError(f"Error while reading metadata of {filepath=}") from err
         
+        metadata = Environment().compile_expression(args.template)({"metadata": metadata})
+        
         try:
             repr_ = pretty_repr(metadata, show_None=args.show_None) # reprs[filepath]
         except Exception as err:
@@ -88,7 +103,7 @@ if __name__ == "__main__":
     else:
         try:
             from .tui import TreeApp
-            app = TreeApp(objs=metadatas, expand=args.expand, show_None=args.show_None)
+            app = TreeApp(objs=metadatas, root_label=args.template, expand=args.expand, show_None=args.show_None)
             app.run()
         except Exception:
             print(total_repr, flush=True)
