@@ -86,7 +86,7 @@ class TreeApp(App):
     def __init__(
         self, 
         objs: Dict[str, Any], 
-        root_label: str,
+        root_label: str = "root",
         expand: bool = False, 
         show_None: bool = False,
         *args, 
